@@ -21,6 +21,6 @@ An open-source educational project that demonstrates how to create a multi-trans
 %cd colab-multi-translator
 !pip install -e .
 
-# After installation, restart runtime and run:
+# After installation, run:
 from multi_translator import create_translator
 create_translator("Hello World!")
