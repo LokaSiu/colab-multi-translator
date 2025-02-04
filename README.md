@@ -17,19 +17,10 @@ An open-source educational project that demonstrates how to create a multi-trans
 ## Quick Start
 
 ```python
-# Clone the repository
 !git clone https://github.com/LokaSiu/colab-multi-translator.git
 %cd colab-multi-translator
-
-# Install the package in development mode
 !pip install -e .
 
-# Restart the runtime (necessary after installing new packages)
-import IPython
-IPython.Application.instance().kernel.do_shutdown(True)
-
-# After restart, import and use:
+# After installation, restart runtime and run:
 from multi_translator import create_translator
-
-# Test the translator with sample text
 create_translator("Hello World!")
