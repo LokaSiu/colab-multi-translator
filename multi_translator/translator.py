@@ -18,8 +18,7 @@ class TranslatorInterface:
         const closeWindowHeight = Math.floor(screenHeight * 0.15);
 
         function detectLanguage(text) {
-            const chinesePattern = /[\u4E00-\u9FFF]/;
-            return chinesePattern.test(text) ? 'zh' : 'en';
+            return /[\\u4E00-\\u9FFF]/.test(text) ? 'zh' : 'en';
         }
 
         function updatePreview(text) {
@@ -79,7 +78,7 @@ class TranslatorInterface:
             }
             return windows[name];
         }
-        '''
+'''
 
         self.js_code2 = '''
         function createCloseAllWindow() {
@@ -155,7 +154,7 @@ class TranslatorInterface:
 
             windows.closeWindow.focus();
         }
-        '''
+'''
 
         self.js_code3 = '''
         function openGoogle() {
@@ -242,36 +241,39 @@ class TranslatorInterface:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body {
+                body {{
                     font-family: Arial, sans-serif;
                     max-width: 800px;
                     margin: 20px auto;
                     padding: 0 20px;
                     background-color: #f5f5f5;
-                }
-                .container {
+                }}
+                .container {{
                     background-color: white;
                     padding: 30px;
                     border-radius: 12px;
                     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
-                .header {
+                }}
+                .header {{
                     text-align: center;
                     margin-bottom: 30px;
-                }
-                .title {
+                }}
+                .title {{
                     color: #2196F3;
                     font-size: 24px;
                     margin-bottom: 10px;
-                }
-                .subtitle {
+                }}
+                .subtitle {{
                     color: #666;
                     font-size: 16px;
-                }
-                .input-section {
+                }}
+                .input-section {{
                     margin-bottom: 25px;
-                }
-                textarea {
+                }}
+'''
+
+        self.html_template += '''
+                textarea {{
                     width: 100%;
                     min-height: 120px;
                     padding: 12px;
@@ -281,18 +283,18 @@ class TranslatorInterface:
                     line-height: 1.5;
                     resize: vertical;
                     transition: border-color 0.3s;
-                }
-                textarea:focus {
+                }}
+                textarea:focus {{
                     border-color: #2196F3;
                     outline: none;
-                }
-                .button-group {
+                }}
+                .button-group {{
                     display: flex;
                     gap: 10px;
                     margin-bottom: 20px;
                     flex-wrap: wrap;
-                }
-                .button {
+                }}
+                .button {{
                     flex: 1;
                     min-width: 120px;
                     padding: 12px 20px;
@@ -303,82 +305,74 @@ class TranslatorInterface:
                     cursor: pointer;
                     transition: transform 0.2s, opacity 0.2s;
                     text-transform: uppercase;
-                }
-                .button:hover {
+                }}
+                .button:hover {{
                     transform: translateY(-2px);
                     opacity: 0.9;
-                }
-                .button:active {
+                }}
+                .button:active {{
                     transform: translateY(0);
-                }
-                .button.primary {
+                }}
+                .button.primary {{
                     background-color: #2196F3;
                     color: white;
-                }
-                .button.google {
+                }}
+                .button.google {{
                     background-color: #4285f4;
                     color: white;
-                }
-                .button.deepl {
+                }}
+                .button.deepl {{
                     background-color: #042B48;
                     color: white;
-                }
-                .button.baidu {
+                }}
+                .button.baidu {{
                     background-color: #2932E1;
                     color: white;
-                }
-                .button.close {
+                }}
+                .button.close {{
                     background-color: #dc3545;
                     color: white;
-                }
-                .preview-section {
+                }}
+                .preview-section {{
                     background-color: #f8f9fa;
                     padding: 15px;
                     border-radius: 8px;
                     margin-top: 20px;
-                }
-                .preview-title {
+                }}
+                .preview-title {{
                     color: #666;
                     font-size: 14px;
                     margin-bottom: 10px;
-                }
-                .source-text {
+                }}
+                .source-text {{
                     color: #333;
                     font-size: 16px;
                     line-height: 1.5;
-                }
-                .shortcuts {
+                }}
+                .shortcuts {{
                     margin-top: 25px;
                     padding: 15px;
                     background-color: #e3f2fd;
                     border-radius: 8px;
-                }
-                .shortcuts-title {
+                }}
+                .shortcuts-title {{
                     color: #1976D2;
                     font-weight: bold;
                     margin-bottom: 10px;
-                }
-                .shortcut-item {
+                }}
+                .shortcut-item {{
                     display: flex;
                     justify-content: space-between;
                     margin: 5px 0;
                     color: #333;
-                }
-                .key-combo {
+                }}
+                .key-combo {{
                     background-color: #fff;
                     padding: 2px 8px;
                     border-radius: 4px;
                     font-family: monospace;
                     border: 1px solid #ccc;
-                }
-                @media (max-width: 600px) {
-                    .button-group {
-                        flex-direction: column;
-                    }
-                    .button {
-                        width: 100%;
-                    }
-                }
+                }}
             </style>
         </head>
         <body>
@@ -453,7 +447,21 @@ class TranslatorInterface:
         """Display the translator interface with optional initial text."""
         display(HTML(self.create_page(text)))
 
+# Usage example
 def create_translator(initial_text=""):
-    """Create and display a new translator interface with optional initial text."""
+    """
+    Create and display a new translator interface with optional initial text.
+    
+    Args:
+        initial_text (str): Optional text to pre-fill in the translator
+    """
     translator = TranslatorInterface()
     translator.display(initial_text)
+    
+# Example usage:
+if __name__ == "__main__":
+    # Create a translator with no initial text
+    create_translator()
+    
+    # Or create a translator with some initial text
+    # create_translator("Hello world!")
