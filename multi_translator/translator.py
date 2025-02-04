@@ -232,7 +232,7 @@ class TranslatorInterface:
                 }
             });
         }, 1000);
-        '''
+'''
 
         self.html_template = '''
         <!DOCTYPE html>
@@ -270,9 +270,6 @@ class TranslatorInterface:
                 .input-section {{
                     margin-bottom: 25px;
                 }}
-'''
-
-        self.html_template += '''
                 textarea {{
                     width: 100%;
                     min-height: 120px;
@@ -432,10 +429,9 @@ class TranslatorInterface:
             </script>
         </body>
         </html>
-        '''
-        
+'''
+
     def create_page(self, text=""):
-        """Create the HTML page with the given text."""
         return self.html_template.format(
             text=text.replace('"', '&quot;'),
             js_code=self.js_code,
@@ -444,24 +440,11 @@ class TranslatorInterface:
         )
     
     def display(self, text=""):
-        """Display the translator interface with optional initial text."""
         display(HTML(self.create_page(text)))
 
-# Usage example
 def create_translator(initial_text=""):
-    """
-    Create and display a new translator interface with optional initial text.
-    
-    Args:
-        initial_text (str): Optional text to pre-fill in the translator
-    """
     translator = TranslatorInterface()
     translator.display(initial_text)
-    
-# Example usage:
+
 if __name__ == "__main__":
-    # Create a translator with no initial text
     create_translator()
-    
-    # Or create a translator with some initial text
-    # create_translator("Hello world!")
