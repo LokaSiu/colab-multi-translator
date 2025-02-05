@@ -68,7 +68,6 @@ class TranslatorInterface:
             closeNext();
         }
 '''
-
         self.js_code2 = '''
         function createCloseAllWindow() {
             if (windows.closeWindow && !windows.closeWindow.closed) {
@@ -77,8 +76,10 @@ class TranslatorInterface:
             }
             const left = (screenWidth - closeWindowWidth) / 2;
             const top = (screenHeight - closeWindowHeight) / 2;
-            const features = `width=${closeWindowWidth},height=${closeWindowHeight},left=${left},top=${top}`;
+            const features = `width=${{closeWindowWidth}},height=${{closeWindowHeight}},left=${{left}},top=${{top}}`;
+
             windows.closeWindow = window.open('', 'closeWindow', features);
+
             const doc = windows.closeWindow.document;
             doc.write(`
                 <!DOCTYPE html>
@@ -138,16 +139,16 @@ class TranslatorInterface:
                 </body>
                 </html>
             `);
+
             windows.closeWindow.focus();
         }
 '''
-
         self.js_code3 = '''
         function openGoogle() {
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
-            const url = `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodeURIComponent(text)}`;
+            const url = `https://translate.google.com/?sl=${{sourceLang}}&tl=${{targetLang}}&text=${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'googleWindow', 0);
         }
 
@@ -155,7 +156,7 @@ class TranslatorInterface:
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
-            const url = `https://www.deepl.com/en/translator#${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+            const url = `https://www.deepl.com/en/translator#${{sourceLang}}/${{targetLang}}/${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'deeplWindow', 1);
         }
 
@@ -163,7 +164,7 @@ class TranslatorInterface:
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
-            const url = `https://fanyi.baidu.com/#${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+            const url = `https://fanyi.baidu.com/#${{sourceLang}}/${{targetLang}}/${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'baiduWindow', 2);
         }
 
@@ -215,7 +216,7 @@ class TranslatorInterface:
 
         function openTranslatorWindow(url, name, position) {
             const left = position * translatorWidth;
-            const features = `width=${translatorWidth},height=${translatorHeight},left=${left},top=0,screenX=${left},screenY=0`;
+            const features = `width=${{translatorWidth}},height=${{translatorHeight}},left=${{left}},top=0,screenX=${{left}},screenY=0`;
             if (windows[name] && !windows[name].closed) {
                 windows[name].close();
             }
@@ -231,7 +232,6 @@ class TranslatorInterface:
             return windows[name];
         }
 '''
-
         self.html_template = '''
         <!DOCTYPE html>
         <html lang="en">
@@ -453,7 +453,6 @@ class TranslatorInterface:
         </body>
         </html>
 '''
-
     def create_page(self, text=""):
         return self.html_template.format(
             text=text.replace('"', '&quot;'),
