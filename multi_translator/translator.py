@@ -17,7 +17,7 @@ class TranslatorInterface:
         const closeWindowWidth = Math.floor(screenWidth * 0.25);
         const closeWindowHeight = Math.floor(screenHeight * 0.15);
 
-        // Auto-detect source language based on the text content.
+        // Auto-detect source language based on text content.
         function detectLanguage(text) {
             return /[\\u4E00-\\u9FFF]/.test(text) ? 'zh' : 'en';
         }
@@ -28,19 +28,19 @@ class TranslatorInterface:
             sourceTexts.forEach(el => el.textContent = text || 'Enter text above');
         }
 
-        // Try to close a given window. This function tries to close directly,
-        // and falls back to focusing then closing if the direct call fails.
+        // Try to close a given window. It first tries to close directly.
+        // If that fails (as with some Google Translate windows), it focuses the window,
+        // navigates to 'about:blank' (to bring it into the same origin), then closes it.
         function closeWindow(windowName) {
             if (windows[windowName] && !windows[windowName].closed) {
                 try {
-                    // Attempt direct close.
                     windows[windowName].close();
                     windows[windowName] = null;
                 } catch (error) {
                     console.error('Direct close failed for', windowName, error);
                     try {
-                        // Fallback: focus then close.
                         windows[windowName].focus();
+                        windows[windowName].location.href = 'about:blank';
                         setTimeout(() => {
                             try {
                                 windows[windowName].close();
@@ -60,10 +60,8 @@ class TranslatorInterface:
         function closeAllWindows() {
             const windowNames = Object.keys(windows);
             let index = 0;
-            
             function closeNext() {
                 if (index < windowNames.length) {
-                    // Skip 'closeWindow' (the control panel) to avoid closing it prematurely.
                     if(windowNames[index] === 'closeWindow') {
                         index++;
                         closeNext();
@@ -74,7 +72,6 @@ class TranslatorInterface:
                     setTimeout(closeNext, 200);
                 }
             }
-            
             closeNext();
         }
 '''
@@ -88,7 +85,7 @@ class TranslatorInterface:
 
             const left = (screenWidth - closeWindowWidth) / 2;
             const top = (screenHeight - closeWindowHeight) / 2;
-            const features = `width=${closeWindowWidth},height=${closeWindowHeight},left=${left},top=${top}`;
+            const features = `width=${{closeWindowWidth}},height=${{closeWindowHeight}},left=${{left}},top=${{top}}`;
 
             windows.closeWindow = window.open('', 'closeWindow', features);
 
@@ -160,17 +157,21 @@ class TranslatorInterface:
         function openGoogle() {
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
-            const targetLang = document.getElementById('targetLang').value;
-            const url = `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodeURIComponent(text)}`;
+            let targetLang = document.getElementById('targetLang').value;
+            // For Google Translate, convert a generic "zh" to "zh-CN" if needed.
+            if (targetLang === 'zh') {
+                targetLang = 'zh-CN';
+            }
+            const url = `https://translate.google.com/?sl=${{sourceLang}}&tl=${{targetLang}}&text=${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'googleWindow', 0);
         }
 
-        // Open a DeepL window using a similar approach.
+        // Open a DeepL window.
         function openDeepL() {
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
-            const url = `https://www.deepl.com/en/translator#${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+            const url = `https://www.deepl.com/en/translator#${{sourceLang}}/${{targetLang}}/${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'deeplWindow', 1);
         }
 
@@ -179,7 +180,7 @@ class TranslatorInterface:
             const text = document.getElementById('sourceText').value;
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
-            const url = `https://fanyi.baidu.com/#${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+            const url = `https://fanyi.baidu.com/#${{sourceLang}}/${{targetLang}}/${{encodeURIComponent(text)}}`;
             return openTranslatorWindow(url, 'baiduWindow', 2);
         }
 
@@ -209,7 +210,7 @@ class TranslatorInterface:
         // Update the preview area with the initial text.
         updatePreview("{text}");
 
-        // Keyboard shortcuts for user convenience.
+        // Keyboard shortcuts.
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
@@ -236,12 +237,10 @@ class TranslatorInterface:
         // Helper function to open a translator window at a calculated screen position.
         function openTranslatorWindow(url, name, position) {
             const left = position * translatorWidth;
-            const features = `width=${translatorWidth},height=${translatorHeight},left=${left},top=0,screenX=${left},screenY=0`;
-
+            const features = `width=${{translatorWidth}},height=${{translatorHeight}},left=${{left}},top=0,screenX=${{left}},screenY=0`;
             if (windows[name] && !windows[name].closed) {
                 windows[name].close();
             }
-
             windows[name] = window.open(url, name, features);
             if (windows[name]) {
                 windows[name].focus();
@@ -254,8 +253,6 @@ class TranslatorInterface:
             return windows[name];
         }
 '''
-
-        # The updated HTML template now includes a language selection dropdown.
         self.html_template = '''
         <!DOCTYPE html>
         <html lang="en">
@@ -430,8 +427,15 @@ class TranslatorInterface:
                     <label for="targetLang">Target Language:</label>
                     <select id="targetLang">
                         <option value="en">English</option>
-                        <option value="zh">Chinese</option>
-                        <!-- You can add additional language options here -->
+                        <option value="zh">Chinese (Generic)</option>
+                        <option value="zh-CN">Chinese (Simplified)</option>
+                        <option value="zh-TW">Chinese (Traditional)</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ru">Russian</option>
                     </select>
                 </div>
 
@@ -478,7 +482,7 @@ class TranslatorInterface:
         </body>
         </html>
 '''
-
+    
     def create_page(self, text=""):
         return self.html_template.format(
             text=text.replace('"', '&quot;'),
