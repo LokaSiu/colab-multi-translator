@@ -28,18 +28,15 @@ class TranslatorInterface:
             sourceTexts.forEach(el => el.textContent = text || 'Enter text above');
         }
 
-        // Try to close a given window. This function tries to close directly,
-        // and falls back to focusing then closing if the direct call fails.
+        // Try to close a given window.
         function closeWindow(windowName) {
             if (windows[windowName] && !windows[windowName].closed) {
                 try {
-                    // Attempt direct close.
                     windows[windowName].close();
                     windows[windowName] = null;
                 } catch (error) {
                     console.error('Direct close failed for', windowName, error);
                     try {
-                        // Fallback: focus then close.
                         windows[windowName].focus();
                         setTimeout(() => {
                             try {
@@ -52,6 +49,20 @@ class TranslatorInterface:
                     } catch (err) {
                         console.error('Fallback focusing failed for', windowName, err);
                     }
+                }
+                // Additional attempt for googleWindow if still open
+                if(windowName === 'googleWindow' && windows[windowName] && !windows[windowName].closed) {
+                    setTimeout(() => {
+                        if(windows[windowName] && !windows[windowName].closed) {
+                            try {
+                                windows[windowName].focus();
+                                windows[windowName].close();
+                                windows[windowName] = null;
+                            } catch(e) {
+                                console.error('Second attempt close failed for googleWindow', e);
+                            }
+                        }
+                    }, 500);
                 }
             }
         }
@@ -235,7 +246,8 @@ class TranslatorInterface:
 
         // Helper function to open a translator window at a calculated screen position.
         function openTranslatorWindow(url, name, position) {
-            const left = position * translatorWidth;
+            // Center the three translator windows horizontally.
+            const left = Math.floor((screenWidth / 2) - (translatorWidth * 1.5) + position * translatorWidth);
             const features = `width=${translatorWidth},height=${translatorHeight},left=${left},top=0,screenX=${left},screenY=0`;
 
             if (windows[name] && !windows[name].closed) {
@@ -254,8 +266,8 @@ class TranslatorInterface:
             return windows[name];
         }
 '''
-
-        # The updated HTML template now includes a language selection dropdown.
+        # The updated HTML template now includes a language selection dropdown,
+        # additional language options, and a note advising best browser usage.
         self.html_template = '''
         <!DOCTYPE html>
         <html lang="en">
@@ -278,7 +290,7 @@ class TranslatorInterface:
                 }}
                 .header {{
                     text-align: center;
-                    margin-bottom: 30px;
+                    margin-bottom: 10px;
                 }}
                 .title {{
                     color: #2196F3;
@@ -288,6 +300,16 @@ class TranslatorInterface:
                 .subtitle {{
                     color: #666;
                     font-size: 16px;
+                    margin-bottom: 20px;
+                }}
+                .note {{
+                    background: #ffeb3b;
+                    color: #333;
+                    padding: 10px;
+                    margin-bottom: 20px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    text-align: center;
                 }}
                 .input-section {{
                     margin-bottom: 15px;
@@ -417,7 +439,10 @@ class TranslatorInterface:
                     <div class="title">Multi-Translator Interface</div>
                     <div class="subtitle">Compare translations from Google, DeepL, and Baidu</div>
                 </div>
-                
+                <div class="note">
+                    Note: For best performance, use Chrome and ensure pop-ups are allowed.<br>
+                    注意：為獲得最佳效能，請使用Chrome並允許瀏覽器彈出視窗功能。
+                </div>
                 <div class="input-section">
                     <textarea 
                         id="sourceText" 
@@ -431,7 +456,8 @@ class TranslatorInterface:
                     <select id="targetLang">
                         <option value="en">English</option>
                         <option value="zh">Chinese</option>
-                        <!-- You can add additional language options here -->
+                        <option value="ko">Korean</option>
+                        <option value="ja">Japanese</option>
                     </select>
                 </div>
 
@@ -478,7 +504,7 @@ class TranslatorInterface:
         </body>
         </html>
 '''
-
+    
     def create_page(self, text=""):
         return self.html_template.format(
             text=text.replace('"', '&quot;'),
@@ -489,7 +515,7 @@ class TranslatorInterface:
     
     def display(self, text=""):
         display(HTML(self.create_page(text)))
-
+    
 def create_translator(initial_text=""):
     translator = TranslatorInterface()
     translator.display(initial_text)
