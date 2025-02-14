@@ -41,13 +41,15 @@ class TranslatorInterface:
         const closeWindowHeight = Math.floor(screenHeight * 0.15);
 
         function detectLanguage(text) {
-            const hasChineseChars = /[\\u4E00-\\u9FFF]/.test(text);
-            const hasJapaneseChars = /[\\u3040-\\u309F\\u30A0-\\u30FF]/.test(text);
-            const hasKoreanChars = /[\\u3130-\\u318F\\uAC00-\\uD7AF]/.test(text);
+            const hasHiragana = /[\\u3040-\\u309F]/.test(text);
+            const hasKatakana = /[\\u30A0-\\u30FF]/.test(text);
+            const hasKanji = /[\\u4E00-\\u9FFF]/.test(text);
+            const hasHangul = /[\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uAC00-\\uD7AF\\uD7B0-\\uD7FF]/.test(text);
+            const hasChineseSpecific = /[\\u3007\\u3021-\\u3029\\u3038-\\u303B]/.test(text);
             
-            if (hasChineseChars) return 'zh';
-            if (hasJapaneseChars) return 'ja';
-            if (hasKoreanChars) return 'ko';
+            if (hasHiragana || hasKatakana) return 'ja';
+            if (hasHangul) return 'ko';
+            if (hasChineseSpecific || hasKanji) return 'zh';
             return 'en';
         }
 
@@ -56,166 +58,116 @@ class TranslatorInterface:
             sourceTexts.forEach(el => el.textContent = text || 'Enter text above');
         }
 
-        let closeAttempts = {};
         function closeWindow(windowName) {
             if (windows[windowName] && !windows[windowName].closed) {
-                closeAttempts[windowName] = (closeAttempts[windowName] || 0) + 1;
-                
                 try {
-                    windows[windowName].focus();
                     windows[windowName].close();
-                    
-                    if (windowName === 'googleWindow' && closeAttempts[windowName] <= 3) {
-                        setTimeout(() => {
-                            if (windows[windowName] && !windows[windowName].closed) {
-                                closeWindow(windowName);
-                            }
-                        }, 300);
-                    }
+                    windows[windowName] = null;
                 } catch (error) {
                     console.error(`Error closing ${windowName}:`, error);
-                } finally {
-                    if (closeAttempts[windowName] >= 3) {
-                        windows[windowName] = null;
-                        delete closeAttempts[windowName];
-                    }
                 }
             }
         }
-'''
+        '''
 
         self.js_code2 = '''
-                function closeAllWindows() {
-                    const windowNames = ['googleWindow', 'deeplWindow', 'baiduWindow'];
-                    let index = 0;
-                    
-                    function closeNext() {
-                        if (index < windowNames.length) {
-                            closeWindow(windowNames[index]);
-                            index++;
-                            setTimeout(closeNext, 300);
-                        } else {
-                            // Close control panel last
-                            if (windows.closeWindow && !windows.closeWindow.closed) {
-                                setTimeout(() => {
-                                    try {
-                                        windows.closeWindow.close();
-                                        windows.closeWindow = null;
-                                    } catch (e) {
-                                        console.error('Error closing control panel:', e);
-                                    }
-                                }, 300);
-                            }
+        function closeAllWindows() {
+            ['googleWindow', 'deeplWindow', 'baiduWindow', 'closeWindow'].forEach(name => {
+                closeWindow(name);
+            });
+        }
+
+        function createCloseAllWindow() {
+            if (windows.closeWindow && !windows.closeWindow.closed) {
+                windows.closeWindow.focus();
+                return;
+            }
+
+            const left = (screenWidth - closeWindowWidth) / 2;
+            const top = (screenHeight - closeWindowHeight) / 2;
+            const features = `width=${closeWindowWidth},height=${closeWindowHeight},left=${left},top=${top}`;
+
+            windows.closeWindow = window.open('', 'closeWindow', features);
+            const doc = windows.closeWindow.document;
+            
+            doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Translation Control Panel</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            background: linear-gradient(135deg, #dc3545, #b02a37);
+                            font-family: Arial, sans-serif;
+                            color: white;
                         }
-                    }
-                    
-                    closeNext();
-                }
+                        .title {
+                            font-size: 20px;
+                            margin-bottom: 20px;
+                            text-align: center;
+                        }
+                        .close-button {
+                            background: white;
+                            color: #dc3545;
+                            border: none;
+                            padding: 15px 30px;
+                            font-size: 18px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            transition: all 0.3s;
+                            font-weight: bold;
+                            text-transform: uppercase;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                        }
+                        .close-button:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 8px rgba(0,0,0,0.2);
+                        }
+                        .status {
+                            margin-top: 20px;
+                            font-size: 14px;
+                            opacity: 0.9;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="title">Translation Windows Control</div>
+                    <button class="close-button" onclick="
+                        window.opener.closeAllWindows();
+                        window.close();
+                    ">
+                        Close All Windows
+                    </button>
+                    <div class="status">Press ESC to close all windows</div>
+                </body>
+                </html>
+            `);
 
-                function createCloseAllWindow() {
-                    if (windows.closeWindow && !windows.closeWindow.closed) {
-                        windows.closeWindow.focus();
-                        return;
-                    }
-
-                    const left = (screenWidth - closeWindowWidth) / 2;
-                    const top = (screenHeight - closeWindowHeight) / 2;
-                    const features = `width=${closeWindowWidth},height=${closeWindowHeight},left=${left},top=${top}`;
-
-                    windows.closeWindow = window.open('', 'closeWindow', features);
-                    const doc = windows.closeWindow.document;
-                    
-                    doc.write(`
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>Translation Control Panel</title>
-                            <style>
-                                body {
-                                    margin: 0;
-                                    display: flex;
-                                    flex-direction: column;
-                                    justify-content: center;
-                                    align-items: center;
-                                    height: 100vh;
-                                    background: linear-gradient(135deg, #dc3545, #b02a37);
-                                    font-family: Arial, sans-serif;
-                                    color: white;
-                                }
-                                .title {
-                                    font-size: 20px;
-                                    margin-bottom: 20px;
-                                    text-align: center;
-                                }
-                                .close-button {
-                                    background: white;
-                                    color: #dc3545;
-                                    border: none;
-                                    padding: 15px 30px;
-                                    font-size: 18px;
-                                    border-radius: 8px;
-                                    cursor: pointer;
-                                    transition: all 0.3s;
-                                    font-weight: bold;
-                                    text-transform: uppercase;
-                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                                }
-                                .close-button:hover {
-                                    transform: translateY(-2px);
-                                    box-shadow: 0 6px 8px rgba(0,0,0,0.2);
-                                }
-                                .status {
-                                    margin-top: 20px;
-                                    font-size: 14px;
-                                    opacity: 0.9;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="title">Translation Windows Control</div>
-                            <button class="close-button" onclick="
-                                window.opener.closeAllWindows();
-                                setTimeout(() => window.close(), 500);
-                            ">
-                                Close All Windows
-                            </button>
-                            <div class="status">Press ESC to close all windows</div>
-                        </body>
-                        </html>
-                    `);
-
-                    windows.closeWindow.focus();
-                }
+            windows.closeWindow.focus();
+        }
         '''
 
         self.js_code3 = '''
         function openTranslatorWindow(url, name, position) {
-            const left = Math.floor((screenWidth / 2) - (translatorWidth * 1.5) + position * translatorWidth);
-            const features = `width=${translatorWidth},height=${translatorHeight},left=${left},top=0,screenX=${left},screenY=0`;
-
             if (windows[name] && !windows[name].closed) {
                 closeWindow(name);
-                setTimeout(() => {
-                    windows[name] = window.open(url, name, features);
-                    setupWindow(windows[name], name, left);
-                }, 300);
-            } else {
-                windows[name] = window.open(url, name, features);
-                setupWindow(windows[name], name, left);
             }
-            
-            return windows[name];
-        }
 
-        function setupWindow(window, name, left) {
-            if (window) {
-                window.focus();
-                window.moveTo(left, 0);
-                window.opener = window;
-                window.addEventListener('beforeunload', () => {
-                    windows[name] = null;
-                });
-            }
+            const left = Math.floor((screenWidth / 2) - (translatorWidth * 1.5) + position * translatorWidth);
+            const features = `width=${translatorWidth},height=${translatorHeight},left=${left},top=0`;
+            
+            setTimeout(() => {
+                windows[name] = window.open(url, name, features);
+                if (windows[name]) {
+                    windows[name].focus();
+                }
+            }, 100);
         }
 
         function openGoogle() {
@@ -223,8 +175,8 @@ class TranslatorInterface:
             const sourceLang = detectLanguage(text);
             const targetLang = document.getElementById('targetLang').value;
             const mappedLang = languageMapping[targetLang]?.google || targetLang;
-            const url = `http://translate.google.com.hk/?sl=${sourceLang}&tl=${mappedLang}&text=${encodeURIComponent(text)}`;
-            return openTranslatorWindow(url, 'googleWindow', 0);
+            const url = `https://translate.google.com/?sl=${sourceLang}&tl=${mappedLang}&text=${encodeURIComponent(text)}`;
+            openTranslatorWindow(url, 'googleWindow', 0);
         }
 
         function openDeepL() {
@@ -233,7 +185,7 @@ class TranslatorInterface:
             const targetLang = document.getElementById('targetLang').value;
             const mappedLang = languageMapping[targetLang]?.deepl || targetLang;
             const url = `https://www.deepl.com/translator#${sourceLang}/${mappedLang}/${encodeURIComponent(text)}`;
-            return openTranslatorWindow(url, 'deeplWindow', 1);
+            openTranslatorWindow(url, 'deeplWindow', 1);
         }
 
         function openBaidu() {
@@ -242,40 +194,16 @@ class TranslatorInterface:
             const targetLang = document.getElementById('targetLang').value;
             const mappedLang = languageMapping[targetLang]?.baidu || targetLang;
             const url = `https://fanyi.baidu.com/#${sourceLang}/${mappedLang}/${encodeURIComponent(text)}`;
-            return openTranslatorWindow(url, 'baiduWindow', 2);
+            openTranslatorWindow(url, 'baiduWindow', 2);
         }
 
         function openAllTranslations() {
             const delay = 400;
-            
-            Promise.resolve()
-                .then(() => new Promise(resolve => {
-                    const g = openGoogle();
-                    if (g) g.focus();
-                    setTimeout(resolve, delay);
-                }))
-                .then(() => new Promise(resolve => {
-                    const d = openDeepL();
-                    if (d) d.focus();
-                    setTimeout(resolve, delay);
-                }))
-                .then(() => new Promise(resolve => {
-                    const b = openBaidu();
-                    if (b) b.focus();
-                    setTimeout(resolve, delay);
-                }))
-                .then(() => {
-                    setTimeout(createCloseAllWindow, delay);
-                });
+            setTimeout(openGoogle, 0);
+            setTimeout(openDeepL, delay);
+            setTimeout(openBaidu, delay * 2);
+            setTimeout(createCloseAllWindow, delay * 3);
         }
-
-        const checkWindowState = setInterval(() => {
-            Object.keys(windows).forEach(windowName => {
-                if (windows[windowName] && windows[windowName].closed) {
-                    windows[windowName] = null;
-                }
-            });
-        }, 1000);
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -288,12 +216,11 @@ class TranslatorInterface:
         });
 
         window.addEventListener('beforeunload', () => {
-            clearInterval(checkWindowState);
             closeAllWindows();
         });
 
         updatePreview("{text}");
-'''
+        '''
 
         self.html_template = '''
         <!DOCTYPE html>
@@ -558,4 +485,4 @@ def create_translator(initial_text=""):
     translator.display(initial_text)
 
 if __name__ == "__main__":
-    create_translator()       
+    create_translator()
